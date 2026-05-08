@@ -25,8 +25,10 @@ def user():
 
     client = BufferClient(token)
     try:
-        user_info = client.get_user()
-        click.echo(json.dumps(user_info, indent=2))
+        data = client.get_user()
+        account = data.get("account", {})
+        click.echo(f"Email: {account.get('email')}")
+        click.echo(f"ID: {account.get('id')}")
     except Exception as e:
         click.echo(f"Error fetching user info: {e}", err=True)
 
@@ -40,9 +42,13 @@ def profiles():
 
     client = BufferClient(token)
     try:
-        profiles = client.get_profiles()
-        for profile in profiles:
-            click.echo(f"{profile.get('service').capitalize()} - {profile.get('formatted_username')} (ID: {profile.get('id')})")
+        data = client.get_profiles()
+        channels = data.get("account", {}).get("channels", [])
+        if not channels:
+            click.echo("No profiles found.")
+            return
+        for channel in channels:
+            click.echo(f"{channel.get('service').capitalize()} - {channel.get('name')} (ID: {channel.get('id')})")
     except Exception as e:
         click.echo(f"Error fetching profiles: {e}", err=True)
 

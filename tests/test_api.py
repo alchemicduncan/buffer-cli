@@ -2,19 +2,19 @@ import pytest
 from buffer_cli.api import BufferClient
 
 def test_buffer_client_get_user(requests_mock):
-    mock_response = {"name": "Test User", "id": "123"}
-    requests_mock.get("https://api.bufferapp.com/1/user.json", json=mock_response, request_headers={"Authorization": "Bearer fake_token"})
+    mock_response = {"data": {"account": {"email": "test@example.com", "id": "123"}}}
+    requests_mock.post("https://api.buffer.com", json=mock_response, request_headers={"Authorization": "Bearer fake_token"})
     
     client = BufferClient("fake_token")
-    user = client.get_user()
+    user_data = client.get_user()
     
-    assert user == mock_response
+    assert user_data == mock_response["data"]
 
 def test_buffer_client_get_profiles(requests_mock):
-    mock_response = [{"service": "twitter", "formatted_username": "@test", "id": "p1"}]
-    requests_mock.get("https://api.bufferapp.com/1/profiles.json", json=mock_response, request_headers={"Authorization": "Bearer fake_token"})
+    mock_response = {"data": {"account": {"channels": [{"service": "twitter", "name": "Test", "id": "p1"}]}}}
+    requests_mock.post("https://api.buffer.com", json=mock_response, request_headers={"Authorization": "Bearer fake_token"})
     
     client = BufferClient("fake_token")
-    profiles = client.get_profiles()
+    profiles_data = client.get_profiles()
     
-    assert profiles == mock_response
+    assert profiles_data == mock_response["data"]
