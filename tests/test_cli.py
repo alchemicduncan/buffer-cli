@@ -19,7 +19,7 @@ def test_cli_user_no_token(mocker):
 def test_cli_user_success(mocker, requests_mock):
     mocker.patch("buffer_cli.cli.get_access_token", return_value="fake_token")
     mock_user = {"name": "Test User"}
-    requests_mock.get("https://api.bufferapp.com/1/user.json?access_token=fake_token", json=mock_user)
+    requests_mock.get("https://api.bufferapp.com/1/user.json", json=mock_user, request_headers={"Authorization": "Bearer fake_token"})
     
     runner = CliRunner()
     result = runner.invoke(main, ["user"])
@@ -29,7 +29,7 @@ def test_cli_user_success(mocker, requests_mock):
 def test_cli_profiles_success(mocker, requests_mock):
     mocker.patch("buffer_cli.cli.get_access_token", return_value="fake_token")
     mock_profiles = [{"service": "twitter", "formatted_username": "@test", "id": "p1"}]
-    requests_mock.get("https://api.bufferapp.com/1/profiles.json?access_token=fake_token", json=mock_profiles)
+    requests_mock.get("https://api.bufferapp.com/1/profiles.json", json=mock_profiles, request_headers={"Authorization": "Bearer fake_token"})
     
     runner = CliRunner()
     result = runner.invoke(main, ["profiles"])
