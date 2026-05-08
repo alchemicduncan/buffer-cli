@@ -15,3 +15,10 @@ buffer = "buffer_cli.cli:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-mock>=3.15.1",
+    "requests-mock>=1.12.1",
+]
