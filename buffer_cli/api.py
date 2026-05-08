@@ -6,20 +6,28 @@ class BufferClient:
     def __init__(self, access_token):
         self.access_token = access_token
 
-    def query(self, query_string, variables=None):
+    def query(self, query_string, variables=None, use_bearer=True):
         headers = {
-            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
         }
+        if use_bearer:
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        else:
+            headers["Authorization"] = self.access_token
+            
         payload = {"query": query_string}
         if variables:
             payload["variables"] = variables
         
         response = requests.post(self.BASE_URL, json=payload, headers=headers)
+        
+        # If 401 and we used Bearer, try one more time without Bearer
+        if response.status_code == 401 and use_bearer:
+            return self.query(query_string, variables, use_bearer=False)
+
         if not response.ok:
             try:
                 error_data = response.json()
-                # GraphQL often returns errors in an 'errors' list
                 if "errors" in error_data:
                     error_msg = error_data["errors"][0].get("message", response.text)
                 else:
@@ -37,9 +45,10 @@ class BufferClient:
     def get_user(self):
         query = """
         query {
-          account {
+          user {
             email
             id
+            name
           }
         }
         """

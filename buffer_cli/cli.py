@@ -26,9 +26,10 @@ def user():
     client = BufferClient(token)
     try:
         data = client.get_user()
-        account = data.get("account", {})
-        click.echo(f"Email: {account.get('email')}")
-        click.echo(f"ID: {account.get('id')}")
+        user = data.get("user", {})
+        click.echo(f"Name: {user.get('name')}")
+        click.echo(f"Email: {user.get('email')}")
+        click.echo(f"ID: {user.get('id')}")
     except Exception as e:
         click.echo(f"Error fetching user info: {e}", err=True)
 
