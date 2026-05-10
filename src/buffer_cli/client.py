@@ -62,9 +62,9 @@ class BufferClient:
     def get_user(self):
         query = """
         query {
-          user {
-            email
+          account {
             id
+            email
             name
           }
         }
