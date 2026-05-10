@@ -59,3 +59,48 @@ def test_buffer_client_raises_on_http_error():
         assert "boom" in str(exc)
         return
     raise AssertionError("Expected BufferError")
+
+
+@respx.mock
+def test_buffer_client_create_post_success():
+    post_payload = {
+        "id": "post_1",
+        "status": "draft",
+        "text": "hello world",
+        "createdAt": "2026-05-09T00:00:00Z",
+        "dueAt": None,
+        "channelId": "ch_1",
+        "channelService": "bluesky",
+        "shareMode": "addToQueue",
+    }
+    route = respx.post("https://api.buffer.com").mock(
+        return_value=httpx.Response(200, json={
+            "data": {"createPost": {"__typename": "PostActionSuccess", "post": post_payload}}
+        })
+    )
+
+    client = BufferClient("fake_token")
+    result = client.create_post(channel_id="ch_1", text="hello world", save_to_draft=True)
+
+    assert result == post_payload
+    sent = route.calls.last.request
+    assert b'"channelId":"ch_1"' in sent.content
+    assert b'"saveToDraft":true' in sent.content
+
+
+@respx.mock
+def test_buffer_client_create_post_raises_on_error_union():
+    respx.post("https://api.buffer.com").mock(
+        return_value=httpx.Response(200, json={
+            "data": {"createPost": {"__typename": "InvalidInputError", "message": "bad text"}}
+        })
+    )
+
+    client = BufferClient("fake_token")
+    try:
+        client.create_post(channel_id="ch_1", text="")
+    except BufferError as exc:
+        assert "InvalidInputError" in str(exc)
+        assert "bad text" in str(exc)
+        return
+    raise AssertionError("Expected BufferError on InvalidInputError union member")

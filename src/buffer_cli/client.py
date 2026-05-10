@@ -84,3 +84,57 @@ class BufferClient:
         }
         """
         return self.query(query)
+
+    def create_post(
+        self,
+        channel_id,
+        text,
+        mode="addToQueue",
+        scheduling_type="automatic",
+        save_to_draft=False,
+        due_at=None,
+        tag_ids=None,
+    ):
+        input_dict = {
+            "channelId": channel_id,
+            "text": text,
+            "mode": mode,
+            "schedulingType": scheduling_type,
+            "saveToDraft": save_to_draft,
+        }
+        if due_at:
+            input_dict["dueAt"] = due_at
+        if tag_ids:
+            input_dict["tagIds"] = list(tag_ids)
+
+        mutation = """
+        mutation CreatePost($input: CreatePostInput!) {
+          createPost(input: $input) {
+            __typename
+            ... on PostActionSuccess {
+              post {
+                id
+                status
+                text
+                createdAt
+                dueAt
+                channelId
+                channelService
+                shareMode
+              }
+            }
+            ... on NotFoundError { message }
+            ... on UnauthorizedError { message }
+            ... on UnexpectedError { message }
+            ... on RestProxyError { message link code }
+            ... on LimitReachedError { message }
+            ... on InvalidInputError { message }
+          }
+        }
+        """
+        data = self.query(mutation, variables={"input": input_dict})
+        result = data["createPost"]
+        if result.get("__typename") == "PostActionSuccess":
+            return result["post"]
+        message = result.get("message", "unknown error")
+        raise BufferError(f"{result.get('__typename', 'UnknownError')}: {message}")
