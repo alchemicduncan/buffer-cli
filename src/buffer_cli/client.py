@@ -1,4 +1,6 @@
-import requests
+from __future__ import annotations
+
+import httpx
 
 ACCESS_TOKEN_ENV = "BUFFER_ACCESS_TOKEN"
 
@@ -12,11 +14,19 @@ class BufferClient:
 
     def __init__(self, access_token):
         self.access_token = access_token
+        self._http = httpx.Client()
+
+    def close(self):
+        self._http.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
+        self.close()
 
     def query(self, query_string, variables=None, use_bearer=True):
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         if self.access_token:
             if use_bearer:
                 headers["Authorization"] = f"Bearer {self.access_token}"
@@ -27,12 +37,12 @@ class BufferClient:
         if variables:
             payload["variables"] = variables
 
-        response = requests.post(self.BASE_URL, json=payload, headers=headers)
+        response = self._http.post(self.BASE_URL, json=payload, headers=headers)
 
         if response.status_code == 401 and use_bearer:
             return self.query(query_string, variables, use_bearer=False)
 
-        if not response.ok:
+        if response.is_error:
             try:
                 error_data = response.json()
                 if "errors" in error_data:

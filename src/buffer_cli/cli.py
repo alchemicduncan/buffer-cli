@@ -1,6 +1,24 @@
+from __future__ import annotations
+
+import json
+import sys
+
 import click
 
-from .client import ACCESS_TOKEN_ENV, BufferClient
+from .client import ACCESS_TOKEN_ENV, BufferClient, BufferError
+
+
+def _emit(payload):
+    click.echo(json.dumps(payload, indent=2, sort_keys=False))
+
+
+def _run(ctx, fn):
+    try:
+        result = fn(ctx.obj["client"])
+    except BufferError as exc:
+        click.echo(str(exc), err=True)
+        sys.exit(1)
+    _emit(result)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -14,38 +32,21 @@ def main(ctx, token):
     """Buffer CLI - Manage your Buffer account from the command line."""
     ctx.ensure_object(dict)
     ctx.obj["client"] = BufferClient(token)
+    ctx.call_on_close(ctx.obj["client"].close)
 
 
 @main.command()
 @click.pass_context
 def user(ctx):
     """Show information about the authenticated user."""
-    client = ctx.obj["client"]
-    try:
-        data = client.get_user()
-        u = data.get("user", {})
-        click.echo(f"Name: {u.get('name')}")
-        click.echo(f"Email: {u.get('email')}")
-        click.echo(f"ID: {u.get('id')}")
-    except Exception as e:
-        click.echo(f"Error fetching user info: {e}", err=True)
+    _run(ctx, lambda c: c.get_user())
 
 
 @main.command()
 @click.pass_context
 def profiles(ctx):
     """List all connected social profiles."""
-    client = ctx.obj["client"]
-    try:
-        data = client.get_profiles()
-        channels = data.get("account", {}).get("channels", [])
-        if not channels:
-            click.echo("No profiles found.")
-            return
-        for channel in channels:
-            click.echo(f"{channel.get('service').capitalize()} - {channel.get('name')} (ID: {channel.get('id')})")
-    except Exception as e:
-        click.echo(f"Error fetching profiles: {e}", err=True)
+    _run(ctx, lambda c: c.get_profiles())
 
 
 if __name__ == "__main__":
