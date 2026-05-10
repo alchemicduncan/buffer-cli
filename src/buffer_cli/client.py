@@ -71,7 +71,7 @@ class BufferClient:
         """
         return self.query(query)
 
-    def get_profiles(self):
+    def get_channels(self):
         query = """
         query {
           account {

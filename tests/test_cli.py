@@ -21,14 +21,14 @@ def test_cli_user_success():
 
 
 @respx.mock
-def test_cli_profiles_success():
+def test_cli_channels_list_success():
     mock_data = {"account": {"channels": [{"service": "twitter", "name": "Test", "id": "p1"}]}}
     respx.post("https://api.buffer.com").mock(
         return_value=httpx.Response(200, json={"data": mock_data})
     )
 
     runner = CliRunner()
-    result = runner.invoke(main, ["--token", "fake_token", "profiles"])
+    result = runner.invoke(main, ["--token", "fake_token", "channels", "list"])
     assert result.exit_code == 0
     assert json.loads(result.output) == mock_data
 

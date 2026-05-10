@@ -42,11 +42,16 @@ def user(ctx):
     _run(ctx, lambda c: c.get_user())
 
 
-@main.command()
+@main.group()
+def channels():
+    """Manage connected social channels."""
+
+
+@channels.command("list")
 @click.pass_context
-def profiles(ctx):
-    """List all connected social profiles."""
-    _run(ctx, lambda c: c.get_profiles())
+def channels_list(ctx):
+    """List all connected social channels."""
+    _run(ctx, lambda c: c.get_channels())
 
 
 if __name__ == "__main__":

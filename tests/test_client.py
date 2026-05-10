@@ -19,16 +19,16 @@ def test_buffer_client_get_user():
 
 
 @respx.mock
-def test_buffer_client_get_profiles():
+def test_buffer_client_get_channels():
     mock_response = {"data": {"account": {"channels": [{"service": "twitter", "name": "Test", "id": "p1"}]}}}
     respx.post("https://api.buffer.com").mock(
         return_value=httpx.Response(200, json=mock_response)
     )
 
     client = BufferClient("fake_token")
-    profiles_data = client.get_profiles()
+    channels_data = client.get_channels()
 
-    assert profiles_data == mock_response["data"]
+    assert channels_data == mock_response["data"]
 
 
 @respx.mock
