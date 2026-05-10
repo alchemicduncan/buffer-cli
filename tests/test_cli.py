@@ -58,6 +58,70 @@ def test_cli_exits_nonzero_on_api_error():
     assert result.exit_code == 1
 
 
+@respx.mock
+def test_cli_posts_list_default_filters_to_sent():
+    org_response = {"data": {"account": {"organizations": [{"id": "org_1"}]}}}
+    posts_response = {"data": {"posts": {
+        "edges": [
+            {"cursor": "c1", "node": {"id": "p1", "status": "sent", "text": "shipped"}},
+        ],
+        "pageInfo": {"hasNextPage": False, "endCursor": "c1"},
+    }}}
+    route = respx.post("https://api.buffer.com").mock(
+        side_effect=[
+            httpx.Response(200, json=org_response),
+            httpx.Response(200, json=posts_response),
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--token", "fake_token", "posts", "list"])
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert parsed["posts"][0]["id"] == "p1"
+    second_body = route.calls[1].request.content
+    assert b'"status":["sent"]' in second_body
+
+
+@respx.mock
+def test_cli_posts_list_status_all_drops_filter():
+    org_response = {"data": {"account": {"organizations": [{"id": "org_1"}]}}}
+    posts_response = {"data": {"posts": {"edges": [], "pageInfo": {"hasNextPage": False, "endCursor": None}}}}
+    route = respx.post("https://api.buffer.com").mock(
+        side_effect=[
+            httpx.Response(200, json=org_response),
+            httpx.Response(200, json=posts_response),
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--token", "fake_token", "posts", "list", "--status", "all"])
+    assert result.exit_code == 0, result.output
+    second_body = route.calls[1].request.content
+    assert b'"status"' not in second_body
+    assert b'"filter"' not in second_body
+
+
+@respx.mock
+def test_cli_posts_list_with_explicit_org_skips_resolution():
+    posts_response = {"data": {"posts": {"edges": [], "pageInfo": {"hasNextPage": False, "endCursor": None}}}}
+    route = respx.post("https://api.buffer.com").mock(
+        return_value=httpx.Response(200, json=posts_response)
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, [
+        "--token", "fake_token", "posts", "list",
+        "--org", "org_explicit", "--channel", "ch_a", "--channel", "ch_b", "--limit", "5",
+    ])
+    assert result.exit_code == 0, result.output
+    assert route.call_count == 1
+    body = route.calls[0].request.content
+    assert b'"organizationId":"org_explicit"' in body
+    assert b'"channelIds":["ch_a","ch_b"]' in body
+    assert b'"first":5' in body
+
+
 def _create_post_mock_response(post=None):
     return {
         "data": {

@@ -59,6 +59,24 @@ def posts():
     """Manage Buffer posts."""
 
 
+@posts.command("list")
+@click.option("--status", "statuses", multiple=True, default=("sent",), show_default=True,
+              help="Filter by post status (repeatable). Pass --status all to drop the filter.")
+@click.option("--channel", "channel_ids", multiple=True, help="Filter by channel ID (repeatable).")
+@click.option("--limit", type=int, default=30, show_default=True, help="Max posts to return.")
+@click.option("--org", "organization_id", default=None, help="Organization ID (auto-resolved from account if omitted).")
+@click.pass_context
+def posts_list(ctx, statuses, channel_ids, limit, organization_id):
+    """List posts (defaults to sent posts across all channels)."""
+    status_filter = None if "all" in statuses else list(statuses)
+    _run(ctx, lambda c: c.list_posts(
+        organization_id=organization_id,
+        statuses=status_filter,
+        channel_ids=list(channel_ids) if channel_ids else None,
+        first=limit,
+    ))
+
+
 @posts.command("create")
 @click.option("--channel", "channel_id", required=True, help="Channel ID to post to (use `buffer channels list`).")
 @click.option("--text", required=True, help="Post text content.")

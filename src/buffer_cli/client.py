@@ -85,6 +85,58 @@ class BufferClient:
         """
         return self.query(query)
 
+    def get_default_organization_id(self):
+        data = self.query("{ account { organizations { id } } }")
+        orgs = data.get("account", {}).get("organizations") or []
+        if not orgs:
+            raise BufferError("No organizations found on this account")
+        return orgs[0]["id"]
+
+    def list_posts(self, organization_id=None, statuses=None, channel_ids=None, first=30):
+        if organization_id is None:
+            organization_id = self.get_default_organization_id()
+
+        input_dict = {"organizationId": organization_id}
+        filter_dict = {}
+        if statuses:
+            filter_dict["status"] = list(statuses)
+        if channel_ids:
+            filter_dict["channelIds"] = list(channel_ids)
+        if filter_dict:
+            input_dict["filter"] = filter_dict
+
+        query = """
+        query ListPosts($input: PostsInput!, $first: Int) {
+          posts(input: $input, first: $first) {
+            edges {
+              cursor
+              node {
+                id
+                status
+                text
+                createdAt
+                dueAt
+                sentAt
+                channelId
+                channelService
+                shareMode
+                externalLink
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+        """
+        data = self.query(query, variables={"input": input_dict, "first": first})
+        result = data["posts"]
+        return {
+            "posts": [edge["node"] for edge in result.get("edges", [])],
+            "pageInfo": result.get("pageInfo", {}),
+        }
+
     def create_post(
         self,
         channel_id,
