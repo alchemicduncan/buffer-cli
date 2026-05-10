@@ -1,5 +1,5 @@
 import pytest
-from buffer_cli.api import BufferClient
+from buffer_cli.client import BufferClient
 
 def test_buffer_client_get_user(requests_mock):
     mock_response = {"data": {"account": {"email": "test@example.com", "id": "123"}}}

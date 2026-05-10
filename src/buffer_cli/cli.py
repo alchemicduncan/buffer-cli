@@ -1,7 +1,7 @@
 import click
 import json
 from .config import set_access_token, get_access_token
-from .api import BufferClient
+from .client import BufferClient
 
 @click.group()
 def main():
