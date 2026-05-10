@@ -1,47 +1,41 @@
 import click
-import json
-from .config import set_access_token, get_access_token
-from .client import BufferClient
 
-@click.group()
-def main():
+from .client import ACCESS_TOKEN_ENV, BufferClient
+
+
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.option(
+    "--token",
+    envvar=ACCESS_TOKEN_ENV,
+    help=f"Buffer access token (or set ${ACCESS_TOKEN_ENV}).",
+)
+@click.pass_context
+def main(ctx, token):
     """Buffer CLI - Manage your Buffer account from the command line."""
-    pass
+    ctx.ensure_object(dict)
+    ctx.obj["client"] = BufferClient(token)
+
 
 @main.command()
-@click.option("--token", prompt="Your Buffer Access Token", help="Your Personal Access Token from Buffer.")
-def login(token):
-    """Authenticate with Buffer using a Personal Access Token."""
-    set_access_token(token)
-    click.echo("Access token saved successfully!")
-
-@main.command()
-def user():
+@click.pass_context
+def user(ctx):
     """Show information about the authenticated user."""
-    token = get_access_token()
-    if not token:
-        click.echo("Error: Not authenticated. Run 'buffer login' first.", err=True)
-        return
-
-    client = BufferClient(token)
+    client = ctx.obj["client"]
     try:
         data = client.get_user()
-        user = data.get("user", {})
-        click.echo(f"Name: {user.get('name')}")
-        click.echo(f"Email: {user.get('email')}")
-        click.echo(f"ID: {user.get('id')}")
+        u = data.get("user", {})
+        click.echo(f"Name: {u.get('name')}")
+        click.echo(f"Email: {u.get('email')}")
+        click.echo(f"ID: {u.get('id')}")
     except Exception as e:
         click.echo(f"Error fetching user info: {e}", err=True)
 
-@main.command()
-def profiles():
-    """List all connected social profiles."""
-    token = get_access_token()
-    if not token:
-        click.echo("Error: Not authenticated. Run 'buffer login' first.", err=True)
-        return
 
-    client = BufferClient(token)
+@main.command()
+@click.pass_context
+def profiles(ctx):
+    """List all connected social profiles."""
+    client = ctx.obj["client"]
     try:
         data = client.get_profiles()
         channels = data.get("account", {}).get("channels", [])
@@ -52,6 +46,7 @@ def profiles():
             click.echo(f"{channel.get('service').capitalize()} - {channel.get('name')} (ID: {channel.get('id')})")
     except Exception as e:
         click.echo(f"Error fetching profiles: {e}", err=True)
+
 
 if __name__ == "__main__":
     main()

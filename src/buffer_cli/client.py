@@ -1,5 +1,7 @@
 import requests
 
+ACCESS_TOKEN_ENV = "BUFFER_ACCESS_TOKEN"
+
 
 class BufferError(Exception):
     """Raised when a Buffer API request fails (HTTP error or GraphQL error)."""
@@ -15,10 +17,11 @@ class BufferClient:
         headers = {
             "Content-Type": "application/json"
         }
-        if use_bearer:
-            headers["Authorization"] = f"Bearer {self.access_token}"
-        else:
-            headers["Authorization"] = self.access_token
+        if self.access_token:
+            if use_bearer:
+                headers["Authorization"] = f"Bearer {self.access_token}"
+            else:
+                headers["Authorization"] = self.access_token
 
         payload = {"query": query_string}
         if variables:
